@@ -1,0 +1,51 @@
+@import 'tailwindcss';
+/* src/styles/global.css */
+
+/* Inject Tailwind's base, components, and utilities styles */
+@tailwind "tailwindcss/preflight";
+@tailwind utilities;
+
+/*
+ Optional: Define custom base styles or component layers here
+ For example, using @layer base or @layer components
+*/
+
+/* Global styles for Markdown (.prose) output */
+/* You can put these in the 'base' or 'components' layer if desired */
+.prose h1 {
+    @apply mb-4 text-3xl font-bold;
+}
+.prose h2 {
+    @apply mb-3 text-2xl font-semibold;
+}
+.prose p {
+    @apply mb-4 leading-relaxed;
+}
+.prose a {
+    @apply text-blue-600 hover:underline dark:text-blue-400;
+}
+/* Use backticks for inline code within @apply if needed, but often direct CSS is clearer */
+.prose code:not(pre code) {
+    @apply rounded bg-gray-200 px-1 py-0.5 text-sm dark:bg-gray-700;
+}
+.prose pre {
+    @apply mb-4 overflow-x-auto rounded bg-gray-200 p-4 dark:bg-gray-800;
+}
+/* Style code blocks within pre tags */
+.prose pre code {
+    @apply bg-transparent p-0 text-sm; /* Reset background/padding */
+}
+.prose blockquote {
+    @apply my-4 border-l-4 border-gray-300 pl-4 italic dark:border-gray-600;
+}
+.prose ul {
+    @apply mb-4 list-inside list-disc;
+}
+.prose ol {
+    @apply mb-4 list-inside list-decimal;
+}
+.prose img {
+    @apply my-4 h-auto max-w-full rounded;
+}
+
+/* Add any other global styles you need below */

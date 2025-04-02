@@ -1,11 +1,140 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Markdown to HTML Converter">
+  <h1 class="text-4xl font-bold text-center mb-8 text-gray-800 dark:text-gray-200">
+    Markdown to HTML Converter
+  </h1>
+
+  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-8">
+    <label
+      for="markdownFile"
+      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+    >
+      Upload a Markdown file (.md):
+    </label>
+    <input
+      type="file"
+      id="markdownFile"
+      accept=".md, .markdown"
+      class="block w-full text-sm text-gray-500 dark:text-gray-400
+             file:mr-4 file:py-2 file:px-4
+             file:rounded-full file:border-0
+             file:text-sm file:font-semibold
+             file:bg-blue-50 dark:file:bg-blue-900
+             file:text-blue-700 dark:file:text-blue-300
+             hover:file:bg-blue-100 dark:hover:file:bg-blue-800
+             cursor-pointer"
+    />
+    <p id="errorMessage" class="text-red-500 text-sm mt-2 hidden"></p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 min-h-[200px]">
+    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
+      HTML Output:
+    </h2>
+    <div
+      id="htmlOutput"
+      class="prose dark:prose-invert max-w-none"
+      aria-live="polite"
+    >
+      <p class="text-gray-500 dark:text-gray-400">
+        Upload a file to see the HTML output here.
+      </p>
+    </div>
+  </div>
+
+  <footer class="text-center mt-10 text-gray-500 dark:text-gray-400 text-sm">
+    Powered by Astro & Marked
+  </footer>
 </Layout>
+
+<script>
+  // Import marked library
+  // Note: Astro automatically bundles npm packages used in client scripts
+  import { marked } from 'marked';
+
+  const fileInput = document.getElementById('markdownFile') as HTMLInputElement;
+  const htmlOutput = document.getElementById('htmlOutput');
+  const errorMessage = document.getElementById('errorMessage');
+
+  if (fileInput && htmlOutput && errorMessage) {
+    fileInput.addEventListener('change', handleFileSelect);
+  }
+
+  function handleFileSelect(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+
+    if (!file) {
+      showError('No file selected.');
+      return;
+    }
+
+    // Basic check for markdown extension (client-side)
+    if (!file.name.toLowerCase().endsWith('.md') && !file.name.toLowerCase().endsWith('.markdown')) {
+      showError('Please select a valid Markdown file (.md or .markdown).');
+      // Clear the input value if desired
+      // target.value = '';
+      return;
+    }
+
+    hideError(); // Hide previous errors
+
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      const markdownContent = e.target?.result as string;
+      if (markdownContent && htmlOutput) {
+        try {
+          // Configure marked (optional)
+          // marked.setOptions({ gfm: true, breaks: true });
+
+          // Parse the markdown content
+          const htmlContent = await marked.parse(markdownContent);
+
+          // Display the HTML
+          // Using innerHTML is generally okay here as marked sanitizes by default
+          // for standard markdown. If you allow raw HTML in markdown and trust
+          // the source, be cautious.
+          htmlOutput.innerHTML = htmlContent;
+        } catch (error) {
+          console.error('Error parsing Markdown:', error);
+          showError('Could not parse the Markdown file.');
+          htmlOutput.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Error loading content.</p>';
+        }
+      } else {
+         showError('Could not read the file content.');
+      }
+    };
+
+    reader.onerror = () => {
+      console.error('Error reading file:', reader.error);
+      showError('Error reading the selected file.');
+      if (htmlOutput) {
+         htmlOutput.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Error loading content.</p>';
+      }
+    };
+
+    // Read the file as text
+    reader.readAsText(file);
+  }
+
+  function showError(message: string) {
+    if (errorMessage) {
+      errorMessage.textContent = message;
+      errorMessage.classList.remove('hidden');
+    }
+     if (htmlOutput) {
+         htmlOutput.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Upload a file to see the HTML output here.</p>';
+     }
+  }
+
+  function hideError() {
+     if (errorMessage) {
+       errorMessage.textContent = '';
+       errorMessage.classList.add('hidden');
+     }
+  }
+</script>
