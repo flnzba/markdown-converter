@@ -1,0 +1,48 @@
+---
+// src/components/SocialIcons.astro
+import { Icon } from 'astro-icon/components';
+
+// Define the type for a link object (optional but recommended)
+interface SocialLink {
+    name: string;
+    url: string;
+    icon: string; // Iconify icon name, e.g., 'mdi:github'
+}
+
+// Define the social links data
+const socialLinks: SocialLink[] = [
+    {
+        name: 'GitHub',
+        url: 'https://github.com/flnzba', // Replace with your actual URL
+        icon: 'mdi:github',
+    },
+    {
+        name: 'LinkedIn',
+        url: 'https://linkedin.com/in/florian-zeba', // Replace with your actual URL
+        icon: 'mdi:linkedin',
+    },
+    {
+        name: 'Website',
+        url: 'https://fzeba.com', // Replace with your actual URL
+        icon: 'mdi:web',
+    },
+];
+---
+
+<div class='flex justify-center items-center gap-4 py-12'>
+    {
+        socialLinks.map((link) => (
+            <a
+                href={link.url}
+                target='_blank'
+                rel='noopener noreferrer'
+                aria-label={link.name}
+                title={link.name}
+                class='block p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-colors duration-200'
+            >
+                <Icon name={link.icon} class='w-6 h-6' />
+                <span class='sr-only'>{link.name}</span>
+            </a>
+        ))
+    }
+</div>
