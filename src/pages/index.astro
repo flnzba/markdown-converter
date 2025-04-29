@@ -22,6 +22,9 @@ import SocialIcons from '../components/SocialIcons.astro';
             <span class='block text-gray-500 dark:text-gray-400 text-sm'
                 >or drag and drop</span
             >
+            <span class='block text-gray-500 dark:text-gray-400 text-xs mt-1'
+                >(You can also paste a copied file)</span
+            >
             <input
                 type='file'
                 id='markdownFile'
@@ -116,6 +119,9 @@ import SocialIcons from '../components/SocialIcons.astro';
     ) as HTMLButtonElement;
     let copyTimeout: number | undefined;
 
+    // Get the file input label for drag/drop events
+    const fileInputLabel = fileInput?.closest('label');
+
     // --- Event Listeners ---
     if (fileInput) {
         fileInput.addEventListener('change', handleFileSelect);
@@ -125,6 +131,12 @@ import SocialIcons from '../components/SocialIcons.astro';
     }
     if (copyButton) {
         copyButton.addEventListener('click', handleCopy);
+    }
+    if (fileInputLabel) {
+        fileInputLabel.addEventListener('dragover', handleDragOver);
+        fileInputLabel.addEventListener('dragleave', handleDragLeave);
+        fileInputLabel.addEventListener('drop', handleDrop);
+        fileInputLabel.addEventListener('paste', handlePaste);
     }
 
     // --- Core Conversion Logic ---
@@ -207,6 +219,171 @@ import SocialIcons from '../components/SocialIcons.astro';
         }
 
         convertMarkdown(markdownContent);
+    }
+
+    // --- Drag and Drop Handlers ---
+    function handleDragOver(event: DragEvent) {
+        event.preventDefault(); // Prevent default browser behavior
+        event.stopPropagation();
+        if (fileInputLabel) {
+            fileInputLabel.classList.add(
+                'border-blue-500',
+                'bg-gray-50',
+                'dark:bg-gray-700'
+            ); // Visual feedback
+        }
+    }
+
+    function handleDragLeave(event: DragEvent) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (fileInputLabel) {
+            fileInputLabel.classList.remove(
+                'border-blue-500',
+                'bg-gray-50',
+                'dark:bg-gray-700'
+            ); // Remove visual feedback
+        }
+    }
+
+    function handleDrop(event: DragEvent) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (fileInputLabel) {
+            fileInputLabel.classList.remove(
+                'border-blue-500',
+                'bg-gray-50',
+                'dark:bg-gray-700'
+            ); // Remove visual feedback
+        }
+
+        const files = event.dataTransfer?.files;
+        if (!files || files.length === 0) {
+            showError('No file dropped.');
+            resetOutput();
+            return;
+        }
+
+        if (files.length > 1) {
+            showError('Please drop only one file.');
+            resetInputAndOutput(fileInput);
+            return;
+        }
+
+        const file = files[0];
+
+        if (
+            !file.name.toLowerCase().endsWith('.md') &&
+            !file.name.toLowerCase().endsWith('.markdown')
+        ) {
+            showError('Please drop a valid Markdown file (.md or .markdown).');
+            resetInputAndOutput(fileInput);
+            return;
+        }
+
+        // Clear file input in case a file was selected previously
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        hideError();
+
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            const markdownContent = e.target?.result as string;
+            if (markdownContent !== null && markdownContent !== undefined) {
+                if (textareaInput) {
+                    textareaInput.value = markdownContent;
+                    // Trigger input event to process the pasted content
+                    textareaInput.dispatchEvent(
+                        new Event('input', { bubbles: true })
+                    );
+                }
+            } else {
+                showError('Could not read the file content.');
+                resetOutput();
+            }
+        };
+
+        reader.onerror = () => {
+            console.error('Error reading dropped file:', reader.error);
+            showError('Error reading the dropped file.');
+            resetInputAndOutput(fileInput);
+        };
+
+        reader.readAsText(file);
+    }
+
+    // --- Paste Handler ---
+    function handlePaste(event: ClipboardEvent) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const items = event.clipboardData?.items;
+        if (!items) {
+            // Handle cases where clipboard data might not be accessible
+            // Or just ignore if no items
+            return;
+        }
+
+        let file: File | null = null;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].kind === 'file') {
+                file = items[i].getAsFile();
+                break; // Process only the first file found
+            }
+        }
+
+        if (!file) {
+            // If no file was pasted, maybe it was text?
+            // Let the default textarea paste handle it, or show a specific message?
+            // For now, we'll just ignore non-file pastes in this handler.
+            // We could potentially try reading text here too if desired:
+            // const text = event.clipboardData?.getData('text/plain');
+            // if (text && textareaInput) { textareaInput.value = text; ... }
+            return;
+        }
+
+        if (
+            !file.name.toLowerCase().endsWith('.md') &&
+            !file.name.toLowerCase().endsWith('.markdown')
+        ) {
+            showError('Please paste a valid Markdown file (.md or .markdown).');
+            resetInputAndOutput(fileInput);
+            return;
+        }
+
+        // Clear file input in case a file was selected/dropped previously
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        hideError();
+
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            const markdownContent = e.target?.result as string;
+            if (markdownContent !== null && markdownContent !== undefined) {
+                if (textareaInput) {
+                    textareaInput.value = markdownContent;
+                    // Trigger input event to process the pasted content
+                    textareaInput.dispatchEvent(
+                        new Event('input', { bubbles: true })
+                    );
+                }
+            } else {
+                showError('Could not read the pasted file content.');
+                resetOutput();
+            }
+        };
+
+        reader.onerror = () => {
+            console.error('Error reading pasted file:', reader.error);
+            showError('Error reading the pasted file.');
+            resetInputAndOutput(fileInput);
+        };
+
+        reader.readAsText(file);
     }
 
     // --- Copy Handler ---
