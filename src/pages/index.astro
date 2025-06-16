@@ -69,27 +69,47 @@ import SocialIcons from '../components/SocialIcons.astro';
         >
             HTML Output:
         </h2>
-        <button
-            id='copyButton'
-            title='Copy HTML to clipboard'
-            class='absolute top-6 right-6 p-1.5 rounded text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hidden'
-        >
-            <svg
-                xmlns='http://www.w3.org/2000/svg'
-                class='h-5 w-5'
-                fill='none'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-                stroke-width='2'
+        <div class='absolute top-6 right-6 flex space-x-2'>
+            <button
+                id='copyButton'
+                title='Copy HTML to clipboard'
+                class='p-1.5 rounded text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hidden'
             >
-                <path
-                    stroke-linecap='round'
-                    stroke-linejoin='round'
-                    d='M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z'
-                ></path>
-            </svg>
-            <span class='sr-only'>Copy HTML</span>
-        </button>
+                <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    class='h-5 w-5'
+                    fill='none'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                    stroke-width='2'
+                >
+                    <path
+                        stroke-linecap='round'
+                        stroke-linejoin='round'
+                        d='M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z'
+                    ></path>
+                </svg>
+                <span class='sr-only'>Copy HTML</span>
+            </button>
+            <button
+                id='pdfButton'
+                title='Download as PDF'
+                class='p-1.5 rounded text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hidden'
+            >
+                <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    class='h-5 w-5'
+                    viewBox='0 0 20 20'
+                    fill='currentColor'
+                >
+                    <path
+                        fill-rule='evenodd'
+                        d='M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z'
+                        clip-rule='evenodd'></path>
+                </svg>
+                <span class='sr-only'>Download PDF</span>
+            </button>
+        </div>
         <div
             id='htmlOutput'
             class='prose dark:prose-invert max-w-none'
@@ -124,6 +144,7 @@ import SocialIcons from '../components/SocialIcons.astro';
     const copyButton = document.getElementById(
         'copyButton'
     ) as HTMLButtonElement;
+    const pdfButton = document.getElementById('pdfButton') as HTMLButtonElement;
     let copyTimeout: number | undefined;
 
     // Get the file input label for drag/drop events
@@ -138,6 +159,9 @@ import SocialIcons from '../components/SocialIcons.astro';
     }
     if (copyButton) {
         copyButton.addEventListener('click', handleCopy);
+    }
+    if (pdfButton) {
+        pdfButton.addEventListener('click', handlePdfDownload);
     }
     if (fileInputLabel) {
         fileInputLabel.addEventListener('dragover', handleDragOver);
@@ -167,7 +191,7 @@ import SocialIcons from '../components/SocialIcons.astro';
 
     // --- Core Conversion Logic ---
     async function convertMarkdown(markdownContent: string) {
-        if (!htmlOutput || !copyButton) return;
+        if (!htmlOutput || !copyButton || !pdfButton) return;
 
         if (!markdownContent.trim()) {
             resetOutput();
@@ -181,6 +205,7 @@ import SocialIcons from '../components/SocialIcons.astro';
             const htmlContent = await markedInstance.parse(processedMarkdown);
             htmlOutput.innerHTML = htmlContent;
             copyButton.classList.remove('hidden');
+            pdfButton.classList.remove('hidden');
             hideError();
         } catch (error) {
             console.error('Error parsing Markdown:', error);
@@ -188,6 +213,7 @@ import SocialIcons from '../components/SocialIcons.astro';
             htmlOutput.innerHTML =
                 '<p class="text-gray-500 dark:text-gray-400">Error processing content.</p>';
             copyButton.classList.add('hidden');
+            pdfButton.classList.add('hidden');
         }
     }
 
@@ -450,6 +476,59 @@ import SocialIcons from '../components/SocialIcons.astro';
         }
     }
 
+    async function handlePdfDownload() {
+        if (!htmlOutput) return;
+
+        // Show a loading state on the button
+        const originalButtonContent = pdfButton.innerHTML;
+        pdfButton.innerHTML = `
+            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="sr-only">Generating...</span>
+        `;
+        pdfButton.disabled = true;
+
+        try {
+            const htmlContent = htmlOutput.innerHTML;
+            const theme = document.documentElement.classList.contains('dark')
+                ? 'dark'
+                : 'light';
+
+            const response = await fetch('/api/create-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ html: htmlContent, theme }),
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    `PDF generation failed with status: ${response.status}`
+                );
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'download.pdf';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            showError('Could not download the PDF. Please try again.');
+        } finally {
+            // Restore button state
+            pdfButton.innerHTML = originalButtonContent;
+            pdfButton.disabled = false;
+        }
+    }
+
     // --- UI Helper Functions ---
     function showError(message: string) {
         if (errorMessage) {
@@ -468,17 +547,13 @@ import SocialIcons from '../components/SocialIcons.astro';
     function resetOutput() {
         if (htmlOutput) {
             htmlOutput.innerHTML =
-                '<p class="text-gray-500 dark:text-gray-400">Enter Markdown text or upload a file to see the HTML output here.</p>';
+                '<p class="text-gray-500 dark:text-gray-400">Upload a file to see the HTML output here.</p>';
         }
         if (copyButton) {
             copyButton.classList.add('hidden');
-            copyButton.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                <span class="sr-only">Copy HTML</span>
-            `;
-            copyButton.title = 'Copy HTML to clipboard';
+        }
+        if (pdfButton) {
+            pdfButton.classList.add('hidden');
         }
     }
 
